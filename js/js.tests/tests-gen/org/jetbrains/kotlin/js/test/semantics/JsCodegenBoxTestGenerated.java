@@ -18667,6 +18667,11 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
                 runTest("compiler/testData/codegen/box/ranges/contains/rangeContainsString.kt");
             }
 
+            @TestMetadata("smartCastOnBothEnds.kt")
+            public void testSmartCastOnBothEnds() throws Exception {
+                runTest("compiler/testData/codegen/box/ranges/contains/smartCastOnBothEnds.kt");
+            }
+
             @TestMetadata("userDefinedContainsExtension.kt")
             public void testUserDefinedContainsExtension() throws Exception {
                 runTest("compiler/testData/codegen/box/ranges/contains/userDefinedContainsExtension.kt");

@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.util.OperatorNameConventions
@@ -365,20 +366,20 @@ private class Transformer(
         val pt2 = t2.promoteIntegerTypeToIntIfRequired(symbols)
 
         return when {
-            pt1.isDouble() || pt2.isDouble() -> symbols.double
-            pt1.isFloat() || pt2.isFloat() -> symbols.float
-            pt1.isULong() || pt2.isULong() -> symbols.uLong!!
-            pt1.isUInt() || pt2.isUInt() -> symbols.uInt!!
-            pt1.isLong() || pt2.isLong() -> symbols.long
-            pt1.isInt() || pt2.isInt() -> symbols.int
-            pt1.isChar() || pt2.isChar() -> symbols.char
-            else -> error("Unexpected types: t1=${t1.classOrNull?.owner?.name}, t2=${t2.classOrNull?.owner?.name}")
+            pt1.isDoubleOrNullable() || pt2.isDoubleOrNullable() -> symbols.double
+            pt1.isFloatOrNullable() || pt2.isFloatOrNullable() -> symbols.float
+            pt1.isULongOrNullable() || pt2.isULongOrNullable() -> symbols.uLong!!
+            pt1.isUIntOrNullable() || pt2.isUIntOrNullable() -> symbols.uInt!!
+            pt1.isLongOrNullable() || pt2.isLongOrNullable() -> symbols.long
+            pt1.isIntOrNullable() || pt2.isIntOrNullable() -> symbols.int
+            pt1.isCharOrNullable() || pt2.isCharOrNullable() -> symbols.char
+            else -> error("Unexpected types: t1=${pt1.render()}, t2=${pt2.render()}")
         }.defaultType
     }
 
     private fun IrType.promoteIntegerTypeToIntIfRequired(symbols: Symbols<CommonBackendContext>): IrType = when {
-        isByte() || isShort() -> symbols.int.defaultType
-        isUByte() || isUShort() -> symbols.uInt!!.defaultType
+        isByteOrNullable() || isShortOrNullable() -> symbols.int.defaultType
+        isUByteOrNullable() || isUShortOrNullable() -> symbols.uInt!!.defaultType
         else -> this
     }
 }
