@@ -12,7 +12,6 @@ import org.jetbrains.kotlin.fir.symbols.CallableId
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
-import java.util.LinkedHashSet
 
 /**
  * Provides representations for FirElement's.
@@ -187,7 +186,7 @@ interface FirDeclarationPresenter {
     }
 }
 
-private class FirDefaultDeclarationPresenter : FirDeclarationPresenter
+internal class FirDefaultDeclarationPresenter : FirDeclarationPresenter
 
 private val NO_NAME_PROVIDED = Name.special("<no name provided>")
 
@@ -209,61 +208,32 @@ private fun FirDeclaration.isCollectable() = when (this) {
 open class FirDeclarationInspector(
     protected val presenter: FirDeclarationPresenter = FirDefaultDeclarationPresenter()
 ) {
-    val otherDeclarations = mutableMapOf<String, LinkedHashSet<FirDeclaration>>()
-    val functionDeclarations = mutableMapOf<String, LinkedHashSet<FirSimpleFunction>>()
+    val otherDeclarations = mutableMapOf<String, MutableList<FirDeclaration>>()
+    val functionDeclarations = mutableMapOf<String, MutableList<FirSimpleFunction>>()
 
     fun collect(declaration: FirDeclaration) {
-        if (!declaration.isCollectable()) {
-            return
+        when {
+            !declaration.isCollectable() -> {}
+            declaration is FirSimpleFunction -> collectFunction(presenter.represent(declaration), declaration)
+            declaration is FirRegularClass -> collectNonFunctionDeclaration(presenter.represent(declaration), declaration)
+            declaration is FirTypeAlias -> collectNonFunctionDeclaration(presenter.represent(declaration), declaration)
+            declaration is FirProperty -> collectNonFunctionDeclaration(presenter.represent(declaration), declaration)
         }
-
-        if (declaration is FirSimpleFunction) {
-            return collectFunction(declaration)
-        }
-
-        collectNonFunctionDeclaration(declaration)
     }
 
-    protected open fun collectNonFunctionDeclaration(declaration: FirDeclaration) {
-        val key = when (declaration) {
-            is FirRegularClass -> presenter.represent(declaration)
-            is FirTypeAlias -> presenter.represent(declaration)
-            is FirProperty -> presenter.represent(declaration)
-            else -> return
+    protected open fun collectNonFunctionDeclaration(key: String, declaration: FirDeclaration): MutableList<FirDeclaration> =
+        otherDeclarations.getOrPut(key) {
+            mutableListOf()
+        }.also {
+            it.add(declaration)
         }
 
-        collectNonFunctionDeclaration(otherDeclarations, key, declaration)
-    }
-
-    protected fun collectNonFunctionDeclaration(
-        target: MutableMap<String, LinkedHashSet<FirDeclaration>>, key: String, declaration: FirDeclaration
-    ) {
-        var value = target[key]
-
-        if (value == null) {
-            value = LinkedHashSet()
-            target[key] = value
+    protected open fun collectFunction(key: String, declaration: FirSimpleFunction): MutableList<FirSimpleFunction> =
+        functionDeclarations.getOrPut(key) {
+            mutableListOf()
+        }.also {
+            it.add(declaration)
         }
-
-        value.add(declaration)
-    }
-
-    protected open fun collectFunction(declaration: FirSimpleFunction) {
-        collectFunction(functionDeclarations, presenter.represent(declaration), declaration)
-    }
-
-    protected fun collectFunction(
-        target: MutableMap<String, LinkedHashSet<FirSimpleFunction>>, key: String, declaration: FirSimpleFunction
-    ) {
-        var value = target[key]
-
-        if (value == null) {
-            value = LinkedHashSet()
-            target[key] = value
-        }
-
-        value.add(declaration)
-    }
 
     fun contains(declaration: FirDeclaration) = when (declaration) {
         is FirSimpleFunction -> presenter.represent(declaration) in functionDeclarations
